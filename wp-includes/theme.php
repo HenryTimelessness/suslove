@@ -177,7 +177,7 @@ function get_stylesheet_directory() {
 	 *
 	 * @since 1.5.0
 	 *
-	 * @param string $stylesheet_dir Absolute path to the current them.
+	 * @param string $stylesheet_dir Absolute path to the current theme.
 	 * @param string $stylesheet     Directory name of the current theme.
 	 * @param string $theme_root     Absolute path to themes directory.
 	 */
@@ -723,7 +723,7 @@ function switch_theme( $stylesheet ) {
 	} else {
 		/*
 		 * Since retrieve_widgets() is called when initializing a theme in the Customizer,
-		 * we need to to remove the theme mods to avoid overwriting changes made via
+		 * we need to remove the theme mods to avoid overwriting changes made via
 		 * the Customizer when accessing wp-admin/widgets.php.
 		 */
 		if ( 'wp_ajax_customize_save' === current_action() ) {
@@ -753,8 +753,10 @@ function switch_theme( $stylesheet ) {
 /**
  * Checks that current theme files 'index.php' and 'style.css' exists.
  *
- * Does not check the default theme, which is the fallback and should always exist.
+ * Does not initially check the default theme, which is the fallback and should always exist.
+ * But if it doesn't exist, it'll fall back to the latest core default theme that does exist.
  * Will switch theme to the fallback theme if current theme does not validate.
+ *
  * You can use the 'validate_current_theme' filter to return false to
  * disable this functionality.
  *
@@ -769,27 +771,44 @@ function validate_current_theme() {
 	 *
 	 * @since 2.7.0
 	 *
-	 * @param bool true Validation flag to check the current theme.
+	 * @param bool $validate Whether to validate the current theme. Default true.
 	 */
 	if ( wp_installing() || ! apply_filters( 'validate_current_theme', true ) )
 		return true;
 
-	if ( get_template() != WP_DEFAULT_THEME && !file_exists(get_template_directory() . '/index.php') ) {
+	if ( ! file_exists( get_template_directory() . '/index.php' ) ) {
+		// Invalid.
+	} elseif ( ! file_exists( get_template_directory() . '/style.css' ) ) {
+		// Invalid.
+	} elseif ( is_child_theme() && ! file_exists( get_stylesheet_directory() . '/style.css' ) ) {
+		// Invalid.
+	} else {
+		// Valid.
+		return true;
+	}
+
+	$default = wp_get_theme( WP_DEFAULT_THEME );
+	if ( $default->exists() ) {
 		switch_theme( WP_DEFAULT_THEME );
 		return false;
 	}
 
-	if ( get_stylesheet() != WP_DEFAULT_THEME && !file_exists(get_template_directory() . '/style.css') ) {
-		switch_theme( WP_DEFAULT_THEME );
-		return false;
+	/**
+	 * If we're in an invalid state but WP_DEFAULT_THEME doesn't exist,
+	 * switch to the latest core default theme that's installed.
+	 * If it turns out that this latest core default theme is our current
+	 * theme, then there's nothing we can do about that, so we have to bail,
+	 * rather than going into an infinite loop. (This is why there are
+	 * checks against WP_DEFAULT_THEME above, also.) We also can't do anything
+	 * if it turns out there is no default theme installed. (That's `false`.)
+	 */
+	$default = WP_Theme::get_core_default_theme();
+	if ( false === $default || get_stylesheet() == $default->get_stylesheet() ) {
+		return true;
 	}
 
-	if ( is_child_theme() && ! file_exists( get_stylesheet_directory() . '/style.css' ) ) {
-		switch_theme( WP_DEFAULT_THEME );
-		return false;
-	}
-
-	return true;
+	switch_theme( $default->get_stylesheet() );
+	return false;
 }
 
 /**

@@ -126,9 +126,6 @@ class WP_Locale {
 		$this->weekday_initial[ __( 'Friday' ) ]    = /* translators: one-letter abbreviation of the weekday */ _x( 'F', 'Friday initial' );
 		$this->weekday_initial[ __( 'Saturday' ) ]  = /* translators: one-letter abbreviation of the weekday */ _x( 'S', 'Saturday initial' );
 
-		// Start of the week.
-		$this->start_of_week = /* translators: default start of the week. 0 = Sunday, 1 = Monday */ _x( '1', 'start of week' );
-
 		// Abbreviations for each day.
 		$this->weekday_abbrev[__('Sunday')]    = /* translators: three-letter abbreviation of the weekday */ __('Sun');
 		$this->weekday_abbrev[__('Monday')]    = /* translators: three-letter abbreviation of the weekday */ __('Mon');
@@ -190,12 +187,22 @@ class WP_Locale {
 		// See http://php.net/number_format
 
 		/* translators: $thousands_sep argument for http://php.net/number_format, default is , */
-		$trans = __('number_format_thousands_sep');
-		$this->number_format['thousands_sep'] = ('number_format_thousands_sep' == $trans) ? ',' : $trans;
+		$thousands_sep = __( 'number_format_thousands_sep' );
+
+		if ( version_compare( PHP_VERSION, '5.4', '>=' ) ) {
+			// Replace space with a non-breaking space to avoid wrapping.
+			$thousands_sep = str_replace( ' ', '&nbsp;', $thousands_sep );
+		} else {
+			// PHP < 5.4.0 does not support multiple bytes in thousands separator.
+			$thousands_sep = str_replace( array( '&nbsp;', '&#160;' ), ' ', $thousands_sep );
+		}
+
+		$this->number_format['thousands_sep'] = ( 'number_format_thousands_sep' === $thousands_sep ) ? ',' : $thousands_sep;
 
 		/* translators: $dec_point argument for http://php.net/number_format, default is . */
-		$trans = __('number_format_decimal_point');
-		$this->number_format['decimal_point'] = ('number_format_decimal_point' == $trans) ? '.' : $trans;
+		$decimal_point = __( 'number_format_decimal_point' );
+
+		$this->number_format['decimal_point'] = ( 'number_format_decimal_point' === $decimal_point ) ? '.' : $decimal_point;
 
 		// Set text direction.
 		if ( isset( $GLOBALS['text_direction'] ) )
@@ -211,7 +218,10 @@ class WP_Locale {
 	}
 
 	/**
+	 * Outputs an admin notice if the /build directory must be used for RTL.
+	 *
 	 * @since 3.8.0
+	 * @access public
 	 */
 	public function rtl_src_admin_notice() {
 		/* translators: %s: Name of the directory (build) */

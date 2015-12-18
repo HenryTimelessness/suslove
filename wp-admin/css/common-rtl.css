@@ -593,9 +593,10 @@ code {
 	top: -3px;
 	text-decoration: none;
 	border: none;
+	border: 1px solid #ccc;
 	-webkit-border-radius: 2px;
 	border-radius: 2px;
-	background: #e0e0e0;
+	background: #f7f7f7;
 	text-shadow: none;
 	font-weight: 600;
 	font-size: 13px;
@@ -603,8 +604,15 @@ code {
 
 .wrap .add-new-h2:hover, /* deprecated */
 .wrap .page-title-action:hover {
+	border-color: #008EC2;
 	background: #00a0d2;
 	color: #fff;
+}
+
+.wrap .page-title-action:focus {
+	border-color: #5b9dd9;
+	-webkit-box-shadow: 0 0 2px rgba( 30, 140, 190, 0.8 );
+	box-shadow: 0 0 2px rgba( 30, 140, 190, 0.8 );
 }
 
 .wrap h1.long-header {
@@ -1328,7 +1336,6 @@ div.error p,
 
 .updated a {
 	padding-bottom: 2px;
-	text-decoration: none;
 }
 
 .notice-alt {
@@ -1997,12 +2004,12 @@ html.wp-toolbar {
 ------------------------------------------------------------------------------*/
 
 .nav-tab {
-	display: inline-block;
+	float: right;
 	border: 1px solid #ccc;
 	border-bottom: none;
-	margin: 0 0 0 5px;
-	padding: 6px 10px;
-	font-size: 15px;
+	margin-right: 0.5em; /* half the font size so set the font size properly */
+	padding: 5px 10px;
+	font-size: 14px;
 	line-height: 24px;
 	font-weight: 600;
 	background: #e4e4e4;
@@ -2044,17 +2051,21 @@ h3 .nav-tab, /* Back-compat for pre-4.4 */
 	color: #000;
 }
 
-/* @todo: consider to use flexbox to reset white space between inline-block elements. */
 h1.nav-tab-wrapper, /* Back-compat for pre-4.4 */
 .wrap h2.nav-tab-wrapper, /* higher specificity to override .wrap > h2:first-child */
 h3.nav-tab-wrapper {
 	border-bottom: 1px solid #ccc;
 	margin: 0;
-	padding: 9px 6px 0 15px;
-	font-size: 1px; /* normalize white space between inline-block elements */
+	padding: 9px 0 0 15px;
 	line-height: inherit;
 }
 
+/* contain floats */
+.nav-tab-wrapper:after {
+	content: "";
+	display: table;
+	clear: both;
+}
 
 /*------------------------------------------------------------------------------
   26.0 - Misc
@@ -2716,6 +2727,7 @@ div.action-links {
 }
 
 /* Thickbox for Plugin Install screen */
+body.about-php #TB_window,
 body.plugin-install-php #TB_window,
 body.import-php #TB_window,
 body.plugins-php #TB_window,
@@ -2725,6 +2737,7 @@ body.index-php #TB_window {
 }
 
 /* IE 8 needs a change in the pseudo element content */
+.ie8 body.about-php #TB_window:before,
 .ie8 body.plugin-install-php #TB_window:before,
 .ie8 body.import-php #TB_window:before,
 .ie8 body.plugins-php #TB_window:before,
@@ -2734,6 +2747,7 @@ body.index-php #TB_window {
 	background: none;
 }
 
+body.about-php #TB_window.thickbox-loading:before,
 body.plugin-install-php #TB_window.thickbox-loading:before,
 body.import-php #TB_window.thickbox-loading:before,
 body.plugins-php #TB_window.thickbox-loading:before,
@@ -2759,6 +2773,7 @@ body.index-php #TB_window.thickbox-loading:before {
 	(-webkit-min-device-pixel-ratio: 1.25),
 	(min-resolution: 120dpi) {
 
+	body.about-php #TB_window.thickbox-loading:before,
 	body.plugin-install-php #TB_window.thickbox-loading:before,
 	body.import-php #TB_window.thickbox-loading:before,
 	body.plugins-php #TB_window.thickbox-loading:before,
@@ -2768,6 +2783,7 @@ body.index-php #TB_window.thickbox-loading:before {
 	}
 }
 
+body.about-php #TB_title,
 body.plugin-install-php #TB_title,
 body.import-php #TB_title,
 body.plugins-php #TB_title,
@@ -2777,6 +2793,7 @@ body.index-php #TB_title {
 	height: 1px;
 }
 
+body.about-php #TB_ajaxWindowTitle,
 body.plugin-install-php #TB_ajaxWindowTitle,
 body.import-php #TB_ajaxWindowTitle,
 body.plugins-php #TB_ajaxWindowTitle,
@@ -2785,6 +2802,7 @@ body.index-php #TB_ajaxWindowTitle {
 	display: none;
 }
 
+body.about-php .tb-close-icon,
 body.plugin-install-php .tb-close-icon,
 body.import-php .tb-close-icon,
 body.plugins-php .tb-close-icon,
@@ -2797,6 +2815,10 @@ body.index-php .tb-close-icon {
 	transition: color .1s ease-in-out, background .1s ease-in-out;
 }
 
+body.about-php #TB_closeWindowButton:focus,
+body.about-php #TB_closeWindowButton:focus .tb-close-icon,
+body.about-php .tb-close-icon:focus,
+body.about-php .tb-close-icon:hover,
 body.plugin-install-php #TB_closeWindowButton:focus,
 body.plugin-install-php #TB_closeWindowButton:focus .tb-close-icon,
 body.plugin-install-php .tb-close-icon:focus,
@@ -2823,6 +2845,7 @@ body.index-php .tb-close-icon:hover {
 	box-shadow: none;
 }
 
+body.about-php .tb-close-icon:before,
 body.plugin-install-php .tb-close-icon:before,
 body.import-php .tb-close-icon:before,
 body.plugins-php .tb-close-icon:before,
@@ -2834,6 +2857,7 @@ body.index-php .tb-close-icon:before {
 
 /* move plugin install close icon to top on narrow screens */
 @media screen and ( max-width: 830px ) {
+	body.about-php .tb-close-icon,
 	body.plugin-install-php .tb-close-icon,
 	body.import-php .tb-close-icon,
 	body.plugins-php .tb-close-icon,
@@ -2905,6 +2929,7 @@ img {
 .js .postbox .handlediv:focus {
 	-webkit-box-shadow: none;
 	box-shadow: none;
+	outline: none;
 }
 
 .js .postbox .handlediv:focus .toggle-indicator:before {

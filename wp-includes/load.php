@@ -257,7 +257,8 @@ function timer_stop( $display = 0, $precision = 3 ) {
  * Set PHP error reporting based on WordPress debug settings.
  *
  * Uses three constants: `WP_DEBUG`, `WP_DEBUG_DISPLAY`, and `WP_DEBUG_LOG`.
- * All three can be defined in wp-config.php, and by default are set to false.
+ * All three can be defined in wp-config.php. By default, `WP_DEBUG` and
+ * `WP_DEBUG_LOG` are set to false, and `WP_DEBUG_DISPLAY` is set to true.
  *
  * When `WP_DEBUG` is true, all PHP notices are reported. WordPress will also
  * display internal notices: when a deprecated WordPress function, function
@@ -552,6 +553,13 @@ function wp_get_mu_plugins() {
 function wp_get_active_and_valid_plugins() {
 	$plugins = array();
 	$active_plugins = (array) get_option( 'active_plugins', array() );
+
+	// Check for hacks file if the option is enabled
+	if ( get_option( 'hack_file' ) && file_exists( ABSPATH . 'my-hacks.php' ) ) {
+		_deprecated_file( 'my-hacks.php', '1.5' );
+		array_unshift( $plugins, ABSPATH . 'my-hacks.php' );
+	}
+
 	if ( empty( $active_plugins ) || wp_installing() )
 		return $plugins;
 

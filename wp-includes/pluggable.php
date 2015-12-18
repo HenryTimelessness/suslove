@@ -1237,7 +1237,8 @@ if ( !function_exists('wp_sanitize_redirect') ) :
  *
  * @since 2.3.0
  *
- * @return string redirect-sanitized URL
+ * @param string $location The path to redirect to.
+ * @return string Redirect-sanitized URL.
  **/
 function wp_sanitize_redirect($location) {
 	$regex = '/
@@ -1269,6 +1270,9 @@ function wp_sanitize_redirect($location) {
  * @access private
  *
  * @see wp_sanitize_redirect()
+ *
+ * @param array $matches RegEx matches against the redirect location.
+ * @return string URL-encoded version of the first RegEx match.
  */
 function _wp_sanitize_utf8_in_redirect( $matches ) {
 	return urlencode( $matches[0] );
@@ -1288,6 +1292,9 @@ if ( !function_exists('wp_safe_redirect') ) :
  * but only used in a few places.
  *
  * @since 2.3.0
+ *
+ * @param string $location The path to redirect to.
+ * @param int    $status   Status code to use.
  */
 function wp_safe_redirect($location, $status = 302) {
 
@@ -1348,6 +1355,7 @@ function wp_validate_redirect($location, $default = '') {
 		return $default;
 
 	$wpp = parse_url(home_url());
+	$site = parse_url( site_url() );
 
 	/**
 	 * Filter the whitelist of hosts to redirect to.
@@ -1357,9 +1365,9 @@ function wp_validate_redirect($location, $default = '') {
 	 * @param array       $hosts An array of allowed hosts.
 	 * @param bool|string $host  The parsed host; empty if not isset.
 	 */
-	$allowed_hosts = (array) apply_filters( 'allowed_redirect_hosts', array($wpp['host']), isset($lp['host']) ? $lp['host'] : '' );
+	$allowed_hosts = (array) apply_filters( 'allowed_redirect_hosts', array( $wpp['host'], $site['host'] ), isset( $lp['host'] ) ? $lp['host'] : '' );
 
-	if ( isset($lp['host']) && ( !in_array($lp['host'], $allowed_hosts) && $lp['host'] != strtolower($wpp['host'])) )
+	if ( isset($lp['host']) && ( ! in_array( $lp['host'], $allowed_hosts ) && ( $lp['host'] != strtolower( $wpp['host'] ) || $lp['host'] != strtolower( $site['host'] ) ) ) )
 		$location = $default;
 
 	return $location;
@@ -1458,7 +1466,7 @@ function wp_notify_postauthor( $comment_id, $deprecated = null ) {
 	// we want to reverse this for the plain text arena of emails.
 	$blogname = wp_specialchars_decode(get_option('blogname'), ENT_QUOTES);
 	$comment_content = wp_specialchars_decode( $comment->comment_content );
-	
+
 	switch ( $comment->comment_type ) {
 		case 'trackback':
 			$notify_message  = sprintf( __( 'New trackback on your post "%s"' ), $post->post_title ) . "\r\n";
@@ -1737,8 +1745,7 @@ if ( !function_exists('wp_new_user_notification') ) :
  * @param int    $user_id    User ID.
  * @param null   $deprecated Not used (argument deprecated).
  * @param string $notify     Optional. Type of notification that should happen. Accepts 'admin' or an empty
- *                           string (admin only), or 'both' (admin and user). The empty string value was kept
- *                           for backward-compatibility purposes with the renamed parameter. Default empty.
+ *                           string (admin only), or 'both' (admin and user). Default empty.
  */
 function wp_new_user_notification( $user_id, $deprecated = null, $notify = '' ) {
 	if ( $deprecated !== null ) {
@@ -1758,7 +1765,8 @@ function wp_new_user_notification( $user_id, $deprecated = null, $notify = '' ) 
 
 	@wp_mail(get_option('admin_email'), sprintf(__('[%s] New User Registration'), $blogname), $message);
 
-	if ( 'admin' === $notify || empty( $notify ) ) {
+	// `$deprecated was pre-4.3 `$plaintext_pass`. An empty `$plaintext_pass` didn't sent a user notifcation.
+	if ( 'admin' === $notify || ( empty( $deprecated ) && empty( $notify ) ) ) {
 		return;
 	}
 
@@ -2016,7 +2024,8 @@ if ( !function_exists('wp_hash') ) :
  *
  * @since 2.0.3
  *
- * @param string $data Plain text to hash
+ * @param string $data   Plain text to hash
+ * @param string $scheme Authentication scheme (auth, secure_auth, logged_in, nonce)
  * @return string Hash of $data
  */
 function wp_hash($data, $scheme = 'auth') {
@@ -2071,8 +2080,9 @@ if ( !function_exists('wp_check_password') ) :
  *	against the $hash + $password
  * @uses PasswordHash::CheckPassword
  *
- * @param string $password Plaintext user's password
- * @param string $hash     Hash of the user's password to check against.
+ * @param string     $password Plaintext user's password
+ * @param string     $hash     Hash of the user's password to check against.
+ * @param string|int $user_id  Optional. User ID.
  * @return bool False, if the $password does not match the hashed password
  */
 function wp_check_password($password, $hash, $user_id = '') {
@@ -2092,10 +2102,10 @@ function wp_check_password($password, $hash, $user_id = '') {
 		 *
 		 * @since 2.5.0
 		 *
-		 * @param bool   $check    Whether the passwords match.
-		 * @param string $password The plaintext password.
-		 * @param string $hash     The hashed password.
-		 * @param int    $user_id  User ID.
+		 * @param bool       $check    Whether the passwords match.
+		 * @param string     $password The plaintext password.
+		 * @param string     $hash     The hashed password.
+		 * @param string|int $user_id  User ID. Can be empty.
 		 */
 		return apply_filters( 'check_password', $check, $password, $hash, $user_id );
 	}
@@ -2480,4 +2490,3 @@ function wp_text_diff( $left_string, $right_string, $args = null ) {
 	return $r;
 }
 endif;
-

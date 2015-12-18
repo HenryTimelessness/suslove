@@ -237,7 +237,7 @@ function wp_nav_menu_taxonomy_meta_boxes() {
  *
  * @param int|string $nav_menu_selected_id (id, name or slug) of the currently-selected menu
  * @return string Disabled attribute if at least one menu exists, false if not
-*/
+ */
 function wp_nav_menu_disabled_check( $nav_menu_selected_id ) {
 	global $one_theme_location_no_menus;
 
@@ -899,7 +899,7 @@ function wp_get_nav_menu_to_edit( $menu_id = 0 ) {
 		 */
 		$walker_class_name = apply_filters( 'wp_edit_nav_menu_walker', 'Walker_Nav_Menu_Edit', $menu_id );
 
-		if ( class_exists( $walker_class_name, false ) ) {
+		if ( class_exists( $walker_class_name ) ) {
 			$walker = new $walker_class_name;
 		} else {
 			return new WP_Error( 'menu_walker_not_exist',

@@ -904,7 +904,8 @@ function wp_generate_tag_cloud( $tags, $args = '' ) {
 
 	// generate the output links array
 	foreach ( $tags_data as $key => $tag_data ) {
-		$a[] = "<a href='" . esc_url( $tag_data['url'] ) . "' class='" . esc_attr( $tag_data['class'] ) . "' title='" . esc_attr( $tag_data['title'] ) . "' style='font-size: " . esc_attr( str_replace( ',', '.', $tag_data['font_size'] ) . $args['unit'] ) . ";'>" . esc_html( $tag_data['name'] ) . "</a>";
+		$class = $tag_data['class'] . ' tag-link-position-' . ( $key + 1 );
+		$a[] = "<a href='" . esc_url( $tag_data['url'] ) . "' class='" . esc_attr( $class ) . "' title='" . esc_attr( $tag_data['title'] ) . "' style='font-size: " . esc_attr( str_replace( ',', '.', $tag_data['font_size'] ) . $args['unit'] ) . ";'>" . esc_html( $tag_data['name'] ) . "</a>";
 	}
 
 	switch ( $args['format'] ) {
@@ -1148,14 +1149,18 @@ function get_the_terms( $post, $taxonomy ) {
 	$terms = get_object_term_cache( $post->ID, $taxonomy );
 	if ( false === $terms ) {
 		$terms = wp_get_object_terms( $post->ID, $taxonomy );
-		$to_cache = array();
-		foreach ( $terms as $key => $term ) {
-			$to_cache[ $key ] = $term->data;
+		if ( ! is_wp_error( $terms ) ) {
+			$to_cache = array();
+			foreach ( $terms as $key => $term ) {
+				$to_cache[ $key ] = $term->data;
+			}
+			wp_cache_add( $post->ID, $to_cache, $taxonomy . '_relationships' );
 		}
-		wp_cache_add( $post->ID, $to_cache, $taxonomy . '_relationships' );
 	}
 
-	$terms = array_map( 'get_term', $terms );
+	if ( ! is_wp_error( $terms ) ) {
+		$terms = array_map( 'get_term', $terms );
+	}
 
 	/**
 	 * Filter the list of terms attached to the given post.

@@ -276,12 +276,13 @@ function wptexturize( $text, $reset = false ) {
 				// Searching for a digit is 10 times more expensive than for the x, so we avoid doing this one!
 				$curl = preg_replace( '/\b(\d(?(?<=0)[\d\.,]+|[\d\.,]*))x(\d[\d\.,]*)\b/', '$1&#215;$2', $curl );
 			}
+
+			// Replace each & with &#038; unless it already looks like an entity.
+			$curl = preg_replace( '/&(?!#(?:\d+|x[a-f0-9]+);|[a-z1-4]{1,8};)/i', '&#038;', $curl );
 		}
 	}
-	$text = implode( '', $textarr );
 
-	// Replace each & with &#038; unless it already looks like an entity.
-	return preg_replace( '/&(?!#(?:\d+|x[a-f0-9]+);|[a-z1-4]{1,8};)/i', '&#038;', $text );
+	return implode( '', $textarr );
 }
 
 /**
@@ -2194,9 +2195,9 @@ function make_clickable( $text ) {
 	$nested_code_pre = 0; // Keep track of how many levels link is nested inside <pre> or <code>
 	foreach ( $textarr as $piece ) {
 
-		if ( preg_match( '|^<code[\s>]|i', $piece ) || preg_match( '|^<pre[\s>]|i', $piece ) )
+		if ( preg_match( '|^<code[\s>]|i', $piece ) || preg_match( '|^<pre[\s>]|i', $piece ) || preg_match( '|^<script[\s>]|i', $piece ) || preg_match( '|^<style[\s>]|i', $piece ) )
 			$nested_code_pre++;
-		elseif ( ( '</code>' === strtolower( $piece ) || '</pre>' === strtolower( $piece ) ) && $nested_code_pre )
+		elseif ( $nested_code_pre && ( '</code>' === strtolower( $piece ) || '</pre>' === strtolower( $piece ) || '</script>' === strtolower( $piece ) || '</style>' === strtolower( $piece ) ) )
 			$nested_code_pre--;
 
 		if ( $nested_code_pre || empty( $piece ) || ( $piece[0] === '<' && ! preg_match( '|^<\s*[\w]{1,20}+://|', $piece ) ) ) {
@@ -2688,23 +2689,6 @@ function iso8601_to_datetime( $date_string, $timezone = 'user' ) {
 	} elseif ($timezone == 'user') {
 		return preg_replace('#([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(Z|[\+|\-][0-9]{2,4}){0,1}#', '$1-$2-$3 $4:$5:$6', $date_string);
 	}
-}
-
-/**
- * Adds a element attributes to open links in new windows.
- *
- * Comment text in popup windows should be filtered through this. Right now it's
- * a moderately dumb function, ideally it would detect whether a target or rel
- * attribute was already there and adjust its actions accordingly.
- *
- * @since 0.71
- *
- * @param string $text Content to replace links to open in a new window.
- * @return string Content that has filtered links.
- */
-function popuplinks( $text ) {
-	$text = preg_replace('/<a (.+?)>/i', "<a $1 target='_blank' rel='external'>", $text);
-	return $text;
 }
 
 /**
@@ -3284,7 +3268,11 @@ function ent2ncr( $text ) {
  *
  * @since 4.3.0
  *
- * @param string $text The text to be formatted.
+ * @see _WP_Editors::editor()
+ *
+ * @param string $text           The text to be formatted.
+ * @param string $default_editor The default editor for the current user.
+ *                               It is usually either 'html' or 'tinymce'.
  * @return string The formatted text after filter is applied.
  */
 function format_for_editor( $text, $default_editor = null ) {
@@ -3297,7 +3285,9 @@ function format_for_editor( $text, $default_editor = null ) {
 	 *
 	 * @since 4.3.0
 	 *
-	 * @param string $text The formatted text.
+	 * @param string $text           The formatted text.
+	 * @param string $default_editor The default editor for the current user.
+	 *                               It is usually either 'html' or 'tinymce'.
 	 */
 	return apply_filters( 'format_for_editor', $text, $default_editor );
 }
@@ -3705,7 +3695,6 @@ function sanitize_option( $option, $value ) {
 			if ( is_wp_error( $value ) ) {
 				$error = $value->get_error_message();
 			} else {
-				$value = wp_kses_post( $value );
 				$value = esc_html( $value );
 			}
 			break;
@@ -4302,6 +4291,9 @@ function wp_basename( $path, $suffix = '' ) {
  * @since 3.0.0
  *
  * @staticvar string|false $dblq
+ *
+ * @param string $text The text to be modified.
+ * @return string The modified text.
  */
 function capital_P_dangit( $text ) {
 	// Simple replacement for titles
@@ -4773,15 +4765,15 @@ function wp_staticize_emoji_for_email( $mail ) {
 }
 
 /**
- * Shorten an URL, to be used as link text
+ * Shorten an URL, to be used as link text.
  *
  * @since 1.2.0
- * @since 4.4.0 Moved to wp-includes/formatting.php from wp-admin/includes/misc.php and added $length param
+ * @since 4.4.0 Moved to wp-includes/formatting.php from wp-admin/includes/misc.php and added $length param.
  *
- * @param string $url URL to shorten
- * @param  int $length Maxiumum length of url to return
- * @return string
-*/
+ * @param string $url    URL to shorten.
+ * @param int    $length Optional. Maximum length of the shortened URL. Default 35 characters.
+ * @return string Shortened URL.
+ */
 function url_shorten( $url, $length = 35 ) {
 	$stripped = str_replace( array( 'https://', 'http://', 'www.' ), '', $url );
 	$short_url = untrailingslashit( $stripped );

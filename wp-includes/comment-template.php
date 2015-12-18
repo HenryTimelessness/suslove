@@ -184,7 +184,7 @@ function get_comment_author_email_link( $linktext = '', $before = '', $after = '
 	if ((!empty($email)) && ($email != '@')) {
 	$display = ($linktext != '') ? $linktext : $email;
 		$return  = $before;
-		$return .= "<a href='mailto:$email'>$display</a>";
+		$return .= sprintf( '<a href="%1$s">%2$s</a>', esc_url( 'mailto:' . $email ), esc_html( $display ) );
 	 	$return .= $after;
 		return $return;
 	} else {
@@ -278,7 +278,7 @@ function get_comment_author_IP( $comment_ID = 0 ) {
  *									 Default current comment.
  */
 function comment_author_IP( $comment_ID = 0 ) {
-	echo get_comment_author_IP( $comment_ID );
+	echo esc_html( get_comment_author_IP( $comment_ID ) );
 }
 
 /**
@@ -736,7 +736,7 @@ function get_comment_link( $comment = null, $args = array() ) {
 		}
 	}
 
-	if ( $cpage ) {
+	if ( $cpage && get_option( 'page_comments' ) ) {
 		if ( $wp_rewrite->using_permalinks() ) {
 			if ( $cpage ) {
 				$link = trailingslashit( $link ) . $wp_rewrite->comments_pagination_base . '-' . $cpage;
@@ -1330,11 +1330,16 @@ function comments_template( $file = '/comments.php', $separate_comments = false 
 	// Trees must be flattened before they're passed to the walker.
 	$comments_flat = array();
 	foreach ( $_comments as $_comment ) {
-		$comments_flat = array_merge( $comments_flat, array( $_comment ), $_comment->get_children( array(
+		$comments_flat[]  = $_comment;
+		$comment_children = $_comment->get_children( array(
 			'format' => 'flat',
 			'status' => $comment_args['status'],
 			'orderby' => $comment_args['orderby']
-		) ) );
+		) );
+
+		foreach ( $comment_children as $comment_child ) {
+			$comments_flat[] = $comment_child;
+		}
 	}
 
 	/**
@@ -1388,45 +1393,7 @@ function comments_template( $file = '/comments.php', $separate_comments = false 
 }
 
 /**
- * Display the JS popup script to show a comment.
- *
- * If the $file parameter is empty, then the home page is assumed. The defaults
- * for the window are 400px by 400px.
- *
- * For the comment link popup to work, this function has to be called or the
- * normal comment link will be assumed.
- *
- * @global string $wpcommentspopupfile  The URL to use for the popup window.
- * @global int    $wpcommentsjavascript Whether to use JavaScript. Set when function is called.
- *
- * @since 0.71
- *
- * @param int $width  Optional. The width of the popup window. Default 400.
- * @param int $height Optional. The height of the popup window. Default 400.
- * @param string $file Optional. Sets the location of the popup window.
- */
-function comments_popup_script( $width = 400, $height = 400, $file = '' ) {
-	global $wpcommentspopupfile, $wpcommentsjavascript;
-
-	if (empty ($file)) {
-		$wpcommentspopupfile = '';  // Use the index.
-	} else {
-		$wpcommentspopupfile = $file;
-	}
-
-	$wpcommentsjavascript = 1;
-	$javascript = "<script type='text/javascript'>\nfunction wpopen (macagna) {\n    window.open(macagna, '_blank', 'width=$width,height=$height,scrollbars=yes,status=yes');\n}\n</script>\n";
-	echo $javascript;
-}
-
-/**
- * Displays the link to the comments popup window for the current post ID.
- *
- * Is not meant to be displayed on single posts and pages. Should be used
- * on the lists of posts
- *
- * @global string $wpcommentspopupfile  The URL to use for the popup window.
- * @global int    $wpcommentsjavascript Whether to use JavaScript. Set when function is called.
+ * Displays the link to the comments for the current post ID.
  *
  * @since 0.71
  *
@@ -1440,8 +1407,6 @@ function comments_popup_script( $width = 400, $height = 400, $file = '' ) {
  *                          Default false.
  */
 function comments_popup_link( $zero = false, $one = false, $more = false, $css_class = '', $none = false ) {
-	global $wpcommentspopupfile, $wpcommentsjavascript;
-
 	$id = get_the_ID();
 	$title = get_the_title();
 	$number = get_comments_number( $id );
@@ -1478,31 +1443,21 @@ function comments_popup_link( $zero = false, $one = false, $more = false, $css_c
 	}
 
 	echo '<a href="';
-	if ( $wpcommentsjavascript ) {
-		if ( empty( $wpcommentspopupfile ) )
-			$home = home_url();
-		else
-			$home = get_option('siteurl');
-		echo $home . '/' . $wpcommentspopupfile . '?comments_popup=' . $id;
-		echo '" onclick="wpopen(this.href); return false"';
+	if ( 0 == $number ) {
+		$respond_link = get_permalink() . '#respond';
+		/**
+		 * Filter the respond link when a post has no comments.
+		 *
+		 * @since 4.4.0
+		 *
+		 * @param string $respond_link The default response link.
+		 * @param integer $id The post ID.
+		 */
+		echo apply_filters( 'respond_link', $respond_link, $id );
 	} else {
-		// if comments_popup_script() is not in the template, display simple comment link
-		if ( 0 == $number ) {
-			$respond_link = get_permalink() . '#respond';
-			/**
-			 * Filter the respond link when a post has no comments.
-			 *
-			 * @since 4.4.0
-			 *
-			 * @param string $respond_link The default response link.
-			 * @param integer $id The post ID.
-			 */
-			echo apply_filters( 'respond_link', $respond_link, $id );
-		} else {
-			comments_link();
-		}
-		echo '"';
+		comments_link();
 	}
+	echo '"';
 
 	if ( !empty( $css_class ) ) {
 		echo ' class="'.$css_class.'" ';
@@ -1510,11 +1465,11 @@ function comments_popup_link( $zero = false, $one = false, $more = false, $css_c
 
 	$attributes = '';
 	/**
-	 * Filter the comments popup link attributes for display.
+	 * Filter the comments link attributes for display.
 	 *
 	 * @since 2.5.0
 	 *
-	 * @param string $attributes The comments popup link attributes. Default empty.
+	 * @param string $attributes The comments link attributes. Default empty.
 	 */
 	echo apply_filters( 'comments_popup_link_attributes', $attributes );
 
@@ -2037,9 +1992,10 @@ function wp_list_comments( $args = array(), $comments = null ) {
  *     @type string $comment_field        The comment textarea field HTML.
  *     @type string $must_log_in          HTML element for a 'must be logged in to comment' message.
  *     @type string $logged_in_as         HTML element for a 'logged in as [user]' message.
- *     @type string $comment_notes_before HTML element for a message displayed before the comment form.
+ *     @type string $comment_notes_before HTML element for a message displayed before the comment fields
+ *                                        if the user is not logged in.
  *                                        Default 'Your email address will not be published.'.
- *     @type string $comment_notes_after  HTML element for a message displayed after the comment form.
+ *     @type string $comment_notes_after  HTML element for a message displayed after the textarea field.
  *     @type string $id_form              The comment form element id attribute. Default 'commentform'.
  *     @type string $id_submit            The comment submit element id attribute. Default 'submit'.
  *     @type string $class_form           The comment form element class attribute. Default 'comment-form'.
@@ -2214,25 +2170,51 @@ function comment_form( $args = array(), $post_id = null ) {
 
 					endif;
 
+					// Prepare an array of all fields, including the textarea
+					$comment_fields = array( 'comment' => $args['comment_field'] ) + (array) $args['fields'];
+
 					/**
-					 * Filter the content of the comment textarea field for display.
+					 * Filter the comment form fields, including the textarea.
 					 *
-					 * @since 3.0.0
+					 * @since 4.4.0
 					 *
-					 * @param string $args_comment_field The content of the comment textarea field.
+					 * @param array $comment_fields The comment fields.
 					 */
-					echo apply_filters( 'comment_form_field_comment', $args['comment_field'] );
+					$comment_fields = apply_filters( 'comment_form_fields', $comment_fields );
 
-					echo $args['comment_notes_after'];
+					// Get an array of field names, excluding the textarea
+					$comment_field_keys = array_diff( array_keys( $comment_fields ), array( 'comment' ) );
 
-					if ( ! is_user_logged_in() ) :
-						/**
-						 * Fires before the comment fields in the comment form.
-						 *
-						 * @since 3.0.0
-						 */
-						do_action( 'comment_form_before_fields' );
-						foreach ( (array) $args['fields'] as $name => $field ) {
+					// Get the first and the last field name, excluding the textarea
+					$first_field = reset( $comment_field_keys );
+					$last_field  = end( $comment_field_keys );
+
+					foreach ( $comment_fields as $name => $field ) {
+
+						if ( 'comment' === $name ) {
+
+							/**
+							 * Filter the content of the comment textarea field for display.
+							 *
+							 * @since 3.0.0
+							 *
+							 * @param string $args_comment_field The content of the comment textarea field.
+							 */
+							echo apply_filters( 'comment_form_field_comment', $field );
+
+							echo $args['comment_notes_after'];
+
+						} elseif ( ! is_user_logged_in() ) {
+
+							if ( $first_field === $name ) {
+								/**
+								 * Fires before the comment fields in the comment form, excluding the textarea.
+								 *
+								 * @since 3.0.0
+								 */
+								do_action( 'comment_form_before_fields' );
+							}
+
 							/**
 							 * Filter a comment form field for display.
 							 *
@@ -2244,15 +2226,17 @@ function comment_form( $args = array(), $post_id = null ) {
 							 * @param string $field The HTML-formatted output of the comment form field.
 							 */
 							echo apply_filters( "comment_form_field_{$name}", $field ) . "\n";
-						}
-						/**
-						 * Fires after the comment fields in the comment form.
-						 *
-						 * @since 3.0.0
-						 */
-						do_action( 'comment_form_after_fields' );
 
-					endif;
+							if ( $last_field === $name ) {
+								/**
+								 * Fires after the comment fields in the comment form, excluding the textarea.
+								 *
+								 * @since 3.0.0
+								 */
+								do_action( 'comment_form_after_fields' );
+							}
+						}
+					}
 
 					$submit_button = sprintf(
 						$args['submit_button'],

@@ -251,6 +251,10 @@
 			$generateButton.show();
 			$passwordWrapper.hide();
 
+			$weakRow.hide( 0, function () {
+				$weakCheckbox.removeProp( 'checked' );
+			} );
+
 			// Disable the inputs when hiding to prevent autofill and submission.
 			$pass1.prop( 'disabled', true );
 			$pass2.prop( 'disabled', true );
@@ -266,6 +270,8 @@
 		$pass1Row.closest('form').on( 'submit', function () {
 			updateLock = false;
 
+			$pass1.prop( 'disabled', false );
+			$pass2.prop( 'disabled', false );
 			$pass2.val( $pass1.val() );
 			$pass1Wrap.removeClass( 'show-password' );
 		});

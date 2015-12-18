@@ -53,17 +53,7 @@ include( ABSPATH . 'wp-admin/admin-header.php' );
 <h1><?php echo esc_html( $title ); ?></h1>
 
 <form method="post" action="options.php" novalidate="novalidate">
-<?php
-settings_fields( 'general' );
-
-/**
- * @global WP_Locale $wp_locale
- */
-global $wp_locale;
-if ( get_option( 'start_of_week' ) != $wp_locale->start_of_week ) {
-	add_settings_field( 'start_of_week', __( 'Week Starts On' ), 'options_general_start_of_week', 'general', 'default', array( 'label_for' => 'start_of_week' ) );
-}
-?>
+<?php settings_fields('general'); ?>
 
 <table class="form-table">
 <tr>
@@ -83,7 +73,7 @@ if ( get_option( 'start_of_week' ) != $wp_locale->start_of_week ) {
 <tr>
 <th scope="row"><label for="home"><?php _e('Site Address (URL)') ?></label></th>
 <td><input name="home" type="url" id="home" aria-describedby="home-description" value="<?php form_option( 'home' ); ?>"<?php disabled( defined( 'WP_HOME' ) ); ?> class="regular-text code<?php if ( defined( 'WP_HOME' ) ) echo ' disabled' ?>" />
-<?php if ( ! defined( 'WP_HOME' ) ) : ?> 
+<?php if ( ! defined( 'WP_HOME' ) ) : ?>
 <p class="description" id="home-description"><?php _e( 'Enter the address here if you <a href="https://codex.wordpress.org/Giving_WordPress_Its_Own_Directory">want your site home page to be different from your WordPress installation directory.</a>' ); ?></p></td>
 <?php endif; ?>
 </tr>
@@ -208,7 +198,7 @@ if ( empty($tzstring) ) { // Create a UTC+- zone if no timezone string exists
 			// Add the difference between the current offset and the new offset to ts to get the correct transition time from date_i18n().
 			printf( $message,
 				'<code>' . date_i18n(
-					get_option( 'date_format' ) . ' ' . get_option( 'time_format' ),
+					__( 'F j, Y' ) . ' ' . __( 'g:i a' ),
 					$tr['ts'] + ( $tz_offset - $tr['offset'] )
 				) . '</code>'
 			);
@@ -293,8 +283,23 @@ if ( empty($tzstring) ) { // Create a UTC+- zone if no timezone string exists
 	</fieldset>
 </td>
 </tr>
+<tr>
+<th scope="row"><label for="start_of_week"><?php _e('Week Starts On') ?></label></th>
+<td><select name="start_of_week" id="start_of_week">
+<?php
+/**
+ * @global WP_Locale $wp_locale
+ */
+global $wp_locale;
 
-<?php do_settings_fields( 'general', 'default' ); ?>
+for ($day_index = 0; $day_index <= 6; $day_index++) :
+	$selected = (get_option('start_of_week') == $day_index) ? 'selected="selected"' : '';
+	echo "\n\t<option value='" . esc_attr($day_index) . "' $selected>" . $wp_locale->get_weekday($day_index) . '</option>';
+endfor;
+?>
+</select></td>
+</tr>
+<?php do_settings_fields('general', 'default'); ?>
 
 <?php
 $languages = get_available_languages();
