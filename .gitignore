@@ -19,3 +19,5 @@ wp-content/plugins/hello.php
 .idea
 
 # Created by .ignore support plugin (hsz.mobi)
+
+/vendor/
