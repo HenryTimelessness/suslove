@@ -1,0 +1,14 @@
+{
+    "name": "henrychua/suslove",
+    "require": {
+        "ext-imagick": "*",
+        "php": ">=5.4.0"
+    },
+    "authors": [
+        {
+            "name": "henrychuahb-mac",
+            "email": "henrychuahb@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}
