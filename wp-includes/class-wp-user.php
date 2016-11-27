@@ -27,9 +27,11 @@
  * @property string $user_registered
  * @property string $user_activation_key
  * @property string $user_status
+ * @property int    $user_level
  * @property string $display_name
  * @property string $spam
  * @property string $deleted
+ * @property string $locale
  */
 class WP_User {
 	/**
@@ -113,7 +115,7 @@ class WP_User {
 	 *
 	 * @param int|string|stdClass|WP_User $id User's ID, a WP_User object, or a user object from the DB.
 	 * @param string $name Optional. User's username
-	 * @param int $blog_id Optional Blog ID, defaults to current blog.
+	 * @param int $blog_id Optional Site ID, defaults to current site.
 	 */
 	public function __construct( $id = 0, $name = '', $blog_id = '' ) {
 		if ( ! isset( self::$back_compat_keys ) ) {
@@ -157,8 +159,8 @@ class WP_User {
 	/**
 	 * Sets up object properties, including capabilities.
 	 *
-	 * @param object $data User DB row object
-	 * @param int $blog_id Optional. The blog id to initialize for
+	 * @param object $data    User DB row object.
+	 * @param int    $blog_id Optional. The site ID to initialize for.
 	 */
 	public function init( $data, $blog_id = '' ) {
 		$this->data = $data;
@@ -242,7 +244,7 @@ class WP_User {
 	}
 
 	/**
-	 * Makes private/protected methods readable for backwards compatibility.
+	 * Makes private/protected methods readable for backward compatibility.
 	 *
 	 * @since 4.3.0
 	 * @access public
@@ -269,7 +271,7 @@ class WP_User {
 	 */
 	public function __isset( $key ) {
 		if ( 'id' == $key ) {
-			_deprecated_argument( 'WP_User->id', '2.1',
+			_deprecated_argument( 'WP_User->id', '2.1.0',
 				sprintf(
 					/* translators: %s: WP_User->ID */
 					__( 'Use %s instead.' ),
@@ -299,7 +301,7 @@ class WP_User {
 	 */
 	public function __get( $key ) {
 		if ( 'id' == $key ) {
-			_deprecated_argument( 'WP_User->id', '2.1',
+			_deprecated_argument( 'WP_User->id', '2.1.0',
 				sprintf(
 					/* translators: %s: WP_User->ID */
 					__( 'Use %s instead.' ),
@@ -338,7 +340,7 @@ class WP_User {
 	 */
 	public function __set( $key, $value ) {
 		if ( 'id' == $key ) {
-			_deprecated_argument( 'WP_User->id', '2.1',
+			_deprecated_argument( 'WP_User->id', '2.1.0',
 				sprintf(
 					/* translators: %s: WP_User->ID */
 					__( 'Use %s instead.' ),
@@ -362,7 +364,7 @@ class WP_User {
 	 */
 	public function __unset( $key ) {
 		if ( 'id' == $key ) {
-			_deprecated_argument( 'WP_User->id', '2.1',
+			_deprecated_argument( 'WP_User->id', '2.1.0',
 				sprintf(
 					/* translators: %s: WP_User->ID */
 					__( 'Use %s instead.' ),
@@ -712,7 +714,7 @@ class WP_User {
 	 */
 	public function has_cap( $cap ) {
 		if ( is_numeric( $cap ) ) {
-			_deprecated_argument( __FUNCTION__, '2.0', __('Usage of user levels by plugins and themes is deprecated. Use roles and capabilities instead.') );
+			_deprecated_argument( __FUNCTION__, '2.0.0', __('Usage of user levels by plugins and themes is deprecated. Use roles and capabilities instead.') );
 			$cap = $this->translate_level_to_cap( $cap );
 		}
 
@@ -768,13 +770,13 @@ class WP_User {
 	}
 
 	/**
-	 * Set the blog to operate on. Defaults to the current blog.
+	 * Set the site to operate on. Defaults to the current site.
 	 *
 	 * @since 3.0.0
 	 *
 	 * @global wpdb $wpdb WordPress database abstraction object.
 	 *
-	 * @param int $blog_id Optional Blog ID, defaults to current blog.
+	 * @param int $blog_id Optional. Site ID, defaults to current site.
 	 */
 	public function for_blog( $blog_id = '' ) {
 		global $wpdb;
